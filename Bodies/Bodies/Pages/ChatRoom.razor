@@ -99,8 +99,9 @@ else
                 .Build();
 
             _hubConnection.On<string, string>("Broadcast", BroadcastMessage);
-
+            
             await _hubConnection.StartAsync();
+            await _hubConnection.SendAsync("AddGroup", "XYZ");
 
             await SendAsync($"[Notice] {_username} joined chat room.");
         }
@@ -139,7 +140,7 @@ else
     {
         if (_isChatting && !string.IsNullOrWhiteSpace(message))
         {
-            await _hubConnection.SendAsync("Broadcast", _username, message);
+            await _hubConnection.SendAsync("Broadcast", _username, message, "XYZ");
 
             _newMessage = string.Empty;
         }
