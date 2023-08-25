@@ -6,28 +6,20 @@ namespace BlazorChat
     {
         public const string HubUrl = "/chat";
 
-        
         public async Task Broadcast(string username, string message, string groupName)
         {
             await Clients.Group(groupName).SendAsync("Broadcast", username, message);
         }
-        
-        /*
-        public async Task Broadcast(string username, string message)
-        {
-            await Clients.All.SendAsync("Broadcast", username, message);
-        }
-        */
 
         public override Task OnConnectedAsync()
         {
-            Console.WriteLine($"{Context.ConnectionId} connected");
+            UserHandler.ConnectedIds.Add(Context.ConnectionId);
             return base.OnConnectedAsync();
         }
 
         public override async Task OnDisconnectedAsync(Exception e)
         {
-            Console.WriteLine($"Disconnected {e?.Message} {Context.ConnectionId}");
+            UserHandler.ConnectedIds.Remove(Context.ConnectionId);
             await base.OnDisconnectedAsync(e);
         }
 
@@ -35,5 +27,10 @@ namespace BlazorChat
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
         }
+    }
+
+    public static class UserHandler
+    {
+        public static HashSet<string> ConnectedIds = new HashSet<string>();
     }
 }

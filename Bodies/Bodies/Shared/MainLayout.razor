@@ -1,6 +1,11 @@
 ﻿@inherits LayoutComponentBase
+@using MudBlazor;
 
 <PageTitle>Bodies</PageTitle>
+
+<MudThemeProvider Theme="MyCustomTheme" />
+<MudDialogProvider/>
+<MudSnackbarProvider/>
 
 <div class="page">
     <main>
@@ -9,3 +14,18 @@
         </article>
     </main>
 </div>
+
+
+@code {
+    MudTheme MyCustomTheme = new MudTheme()
+        {
+            Palette = new PaletteLight()
+            {
+                Primary = "#FFFFFF",
+                Secondary =	"#008000",
+                Background = "#000000",
+                TextPrimary = "#FFFFFF",
+                TextDisabled = "#FFFFFF"
+            },
+        };
+}
