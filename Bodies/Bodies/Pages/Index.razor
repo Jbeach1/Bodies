@@ -13,7 +13,7 @@
                 <MudText Typo="Typo.h1">Bodies</MudText>
                 <MudStack>                
                     <MudButton OnClick=CreateLobby Variant="Variant.Outlined">New Game</MudButton>
-                    <MudTextField @bind-Value="_code" Label="Enter Code" Variant="Variant.Text"></MudTextField>
+                    <MudTextField @bind-Value="_code" Label="Enter Code" Variant="Variant.Text" AutoFocus=true></MudTextField>
                     <MudButton OnClick=JoinLobby Variant="Variant.Outlined">Existing Game</MudButton>
                 </MudStack>
             </MudItem>
