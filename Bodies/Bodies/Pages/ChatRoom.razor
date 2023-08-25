@@ -47,9 +47,17 @@ else
     <span>&nbsp</span>
     <MudStack Row=true Spacing="2">
         @if(!_gameStarted){
-            <MudButton Size="Size.Small" OnClick=StartGame Variant="Variant.Outlined">Start Game</MudButton>
-            <MudButton Size="Size.Small" OnClick=DisconnectAsync Variant="Variant.Outlined">Leave Game</MudButton>
-        } else
+            if (_isAdmin)
+            {
+                <MudButton Size="Size.Small" OnClick=StartGame Variant="Variant.Outlined">Start Game</MudButton>
+                <MudButton Size="Size.Small" OnClick=DisconnectAsync Variant="Variant.Outlined">Leave Game</MudButton>
+            } 
+            else
+            {
+                <MudButton Size="Size.Small" OnClick=DisconnectAsync Variant="Variant.Outlined">Leave Game</MudButton>
+            }
+        } 
+        else
         {
             <MudButton Size="Size.Small" OnClick=DisconnectAsync Variant="Variant.Outlined">Make New Game</MudButton>
         }
@@ -72,6 +80,8 @@ else
     // name of the user who will be chatting
     private string _username = string.Empty;
 
+    private bool _isAdmin = false;
+
     // on-screen message
     private string _message;
 
@@ -83,8 +93,7 @@ else
 
     private string _hubUrl;
 
-    private HubConnection 
-    _hubConnection;
+    private HubConnection _hubConnection;
 
     private int _numConnections = 0;
 
@@ -118,6 +127,7 @@ else
             _hubConnection.On<string, string>("Broadcast", BroadcastMessage);
             _hubConnection.On<int>("GetPlayerCount", SetPlayerCount);
             _hubConnection.On<string>("GameStarted", GameStarted);
+            _hubConnection.On("AssignAdmin", AssignAdmin);
 
             await _hubConnection.StartAsync();
             await _hubConnection.SendAsync("AddGroup", LobbyName);
@@ -128,6 +138,11 @@ else
             _message = $"ERROR: Failed to start chat client: {e.Message}";
             _inLobby = false;
         }
+    }
+
+    private void AssignAdmin()
+    {
+        _isAdmin = true;
     }
 
     private void BroadcastMessage(string name, string message)

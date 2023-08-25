@@ -37,6 +37,12 @@ namespace BlazorChat
         public async Task AddGroup(string groupName)
         {
             UserHandler.ConnectedUsers.Add(Context.ConnectionId, new User () { GroupName = groupName });
+
+            if(UserHandler.GetCountByGroup(groupName) == 1)
+            {
+                //Must be starting a new group - assign user to be admin
+                await Clients.Client(Context.ConnectionId).SendAsync("AssignAdmin");
+            }
             await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
             await Clients.Group(groupName).SendAsync("GetPlayerCount", UserHandler.GetCountByGroup(groupName));
         }
