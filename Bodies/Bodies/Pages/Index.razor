@@ -4,16 +4,14 @@
 
 <PageTitle>Index</PageTitle>
 
-
-
 <MudGrid>
     <MudItem xs="12" sm="6">
         <MudGrid >
             <MudItem xs="12">
-                <MudText Typo="Typo.h1">Bodies</MudText>
-                <MudStack>                
+                <MudStack>
+                    <MudText Color="Color.Secondary" Typo="Typo.h3">BODIES</MudText>
                     <MudButton OnClick=CreateLobby Variant="Variant.Outlined">New Game</MudButton>
-                    <MudTextField @bind-Value="_code" Label="Enter Code" Variant="Variant.Text" AutoFocus=true></MudTextField>
+                    <MudTextField @bind-Value="_code" Label="Enter Code" Variant="Variant.Text" AutoFocus=true MaxLength="4"></MudTextField>
                     <MudButton OnClick=JoinLobby Variant="Variant.Outlined">Existing Game</MudButton>
                 </MudStack>
             </MudItem>
@@ -27,11 +25,12 @@
 
     private void CreateLobby()
     {
-        Navigation.NavigateTo($"/{RandomString(5)}");
+        Navigation.NavigateTo($"/{RandomString(4)}");
     }
 
     private void JoinLobby()
     {
+        _code = _code.ToUpper();
         Navigation.NavigateTo($"/{_code}");
     }
 

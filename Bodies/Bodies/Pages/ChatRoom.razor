@@ -5,18 +5,18 @@
 @using MudBlazor;
 @using Microsoft.AspNetCore.SignalR.Client;
 
-<h1>Bodies - @LobbyName</h1>
-<hr />
+<MudText Color="Color.Secondary" Typo="Typo.h3">BODIES - @LobbyName</MudText>
 
 @if (!_inLobby)
 {  
+  
     <MudGrid>
         <MudItem xs="12" sm="6">
             <MudGrid>
                 <MudItem xs="12">
                     <MudStack>
                         <MudTextField @bind-Value="_username" Label="User Name" Variant="Variant.Text" AutoFocus=true></MudTextField>
-                        <MudButton OnClick=JoinGame Variant="Variant.Outlined">Join Game</MudButton>
+                        <MudButton Size="Size.Small" OnClick=JoinGame Variant="Variant.Outlined">Join Game</MudButton>
                     </MudStack>
                 </MudItem>
             </MudGrid>
@@ -26,8 +26,7 @@
     // Error messages
     @if (_message != null)
     {
-        <div class="invalid-feedback">@_message</div>
-        <small id="emailHelp" class="form-text text-muted">@_message</small>
+        <MudText> @_message </MudText>
     }
 }
 else
@@ -37,15 +36,24 @@ else
         @foreach (var item in _messages)
         {
             <MudText Color="Color.Primary">
-                @item.Body
+                @((MarkupString)item.Body)
             </MudText>
         }
     </div>
-
-<MudStack Row=true Spacing="2">
-        <MudButton Size="Size.Small" Variant="Variant.Outlined">Start Game</MudButton>
-        <MudButton Size="Size.Small" OnClick=DisconnectAsync Variant="Variant.Outlined">Leave Game</MudButton>
-</MudStack>
+    <span>&nbsp</span>
+    <MudText>
+        @_numConnections players in lobby.
+    </MudText>
+    <span>&nbsp</span>
+    <MudStack Row=true Spacing="2">
+        @if(!_gameStarted){
+            <MudButton Size="Size.Small" OnClick=StartGame Variant="Variant.Outlined">Start Game</MudButton>
+            <MudButton Size="Size.Small" OnClick=DisconnectAsync Variant="Variant.Outlined">Leave Game</MudButton>
+        } else
+        {
+            <MudButton Size="Size.Small" OnClick=DisconnectAsync Variant="Variant.Outlined">Make New Game</MudButton>
+        }
+    </MudStack>
  
 }
 
@@ -58,6 +66,8 @@ else
 
     // flag to indicate if the user has joined with a user name
     private bool _inLobby = false;
+
+    private bool _gameStarted = false;
 
     // name of the user who will be chatting
     private string _username = string.Empty;
@@ -73,9 +83,10 @@ else
 
     private string _hubUrl;
 
-    private HubConnection _hubConnection;
+    private HubConnection 
+    _hubConnection;
 
-    private int _numConnections;
+    private int _numConnections = 0;
 
     public async Task JoinGame()
     {
@@ -105,6 +116,8 @@ else
                 .Build();
 
             _hubConnection.On<string, string>("Broadcast", BroadcastMessage);
+            _hubConnection.On<int>("GetPlayerCount", SetPlayerCount);
+            _hubConnection.On<string>("GameStarted", GameStarted);
 
             await _hubConnection.StartAsync();
             await _hubConnection.SendAsync("AddGroup", LobbyName);
@@ -121,22 +134,41 @@ else
     {
         _messages.Add(new Message(name, message));
 
-        // Inform blazor the UI needs updating
         StateHasChanged();
+    }
+
+    private void SetPlayerCount(int count)
+    {
+        _numConnections = count;
     }
 
     private async Task DisconnectAsync()
     {
         if (_inLobby)
         {
-            await SendAsync($"{_username} has left the lobby.");
+            await _hubConnection.SendAsync("Broadcast", _username, $"<FONT COLOR='#ff0000'>{_username}</FONT> has left the lobby.", LobbyName);
 
             await _hubConnection.StopAsync();
             await _hubConnection.DisposeAsync();
 
             _hubConnection = null;
             _inLobby = false;
+            GoHome();
         }
+    }
+
+    private async Task StartGame()
+    {
+        await SendAsync($"<FONT COLOR='#ff0000'>{_username}</FONT> started the game...");
+        await _hubConnection.SendAsync("StartGame", LobbyName, 1);
+    }
+
+    private void GameStarted(string message)
+    {
+        _messages.Add(new Message(message));
+        _gameStarted = true;
+
+        StateHasChanged();
     }
 
     private async Task SendAsync(string message)
@@ -153,22 +185,28 @@ else
     {
         string[] phrases =
         {
-            $" {userName} - don't let the master catch you sleeping...",
-            $"welcome, {userName} we've been waiting for you...",
-            $"{userName} it took you long enough...",
-            $"{userName} has arrived...",
-            $"welcome {userName}, you should leave :)",
-            $"{userName}! prepare to die!",
-            $"{userName} likes cock, I mean cock, I mean cock!?",
-            $" Hold the applause, ${userName} has joined",
-            $" {userName} bees?",
-            $" {userName} ... who let this guy in?"
-        };
+            $"<FONT COLOR='#ff0000'>{userName}</FONT> - don't let the master catch you sleeping...",
+            $"Welcome, <FONT COLOR='#ff0000'>{userName}</FONT> we've been waiting for you...",
+            $"<FONT COLOR='#ff0000'>{userName}</FONT> it took you long enough...",
+            $"<FONT COLOR='#ff0000'>{userName}</FONT> has arrived...",
+            $"Welcome <FONT COLOR='#ff0000'>{userName}</FONT>, you should leave :)",
+            $"<FONT COLOR='#ff0000'>{userName}</FONT>! prepare to die!",
+            $"<FONT COLOR='#ff0000'>{userName}</FONT> likes cock, I mean cock, I mean cock!?",
+            $" Hold the applause, <FONT COLOR='#ff0000'>{userName}</FONT> has joined",
+            $" <FONT COLOR='#ff0000'>{userName}</FONT> bees?",
+            $" <FONT COLOR='#ff0000'>{userName}</FONT> ... who let this guy in?",
+            $" <FONT COLOR='#ff0000'>{userName}</FONT> has joined the game.",
+            $" Welcome <FONT COLOR='#ff0000'>{userName}</FONT>!",
+            $" Welcome aboard <FONT COLOR='#ff0000'>{userName}</FONT>!",
+    };
 
         return phrases[_random.Next(phrases.Length)];
     }
 
-
+    public void GoHome()
+    {
+        navigationManager.NavigateTo($"/");
+    }
 
     private class Message
     {
@@ -178,7 +216,12 @@ else
             Body = body;
         }
 
-        public string Username { get; set; }
-        public string Body { get; set; }
+        public Message(string body)
+        {
+            Body = body;
+        }
+
+        public string Username { get; set; } = string.Empty;
+        public string Body { get; set; } = string.Empty;
     }
 }
