@@ -49,8 +49,7 @@ namespace BlazorChat
 
         public async Task StartGame(string groupName, int numberOfMafia)
         {
-            if (UserHandler.GetCountByGroup(groupName) / numberOfMafia > 2)
-            {
+           
                 for (int i = 0; i < numberOfMafia; i++)
                 {
                     var nonMafias = UserHandler.GetNonMafiaUser(groupName);
@@ -66,11 +65,7 @@ namespace BlazorChat
                 {
                     await Clients.Client(x.Key).SendAsync("GameStarted", x.Value.GameStartedMessage);
                 }
-            } 
-            else
-            {
-                await Clients.Group(groupName).SendAsync("Broadcast","System","Not enough players to start game, get more players or have less mafia");
-            }
+            
         }
     }
 
@@ -129,6 +124,6 @@ namespace BlazorChat
         public string GroupName { get; set; } = string.Empty;
 
         public bool IsMafia = false;
-        public string GameStartedMessage => IsMafia ? "<FONT COLOR='#ff0000'>YOU ARE THE MAFIA!!</FONT>" : "YOU ARE NOT THE MAFIA!";
+        public string GameStartedMessage => IsMafia ? "<FONT COLOR='#ff0000'>YOU ARE THE KILLER!!</FONT>" : "YOU ARE NOT THE KILLER!";
     }
 }

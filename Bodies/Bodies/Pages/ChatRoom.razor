@@ -5,6 +5,9 @@
 @using MudBlazor;
 @using Microsoft.AspNetCore.SignalR.Client;
 
+
+<PageTitle>Bodies - @LobbyName</PageTitle>
+
 <MudText Color="Color.Secondary" Typo="Typo.h3">BODIES - @LobbyName</MudText>
 
 @if (!_inLobby)
@@ -16,7 +19,7 @@
                 <MudItem xs="12">
                     <MudStack>
                         <MudTextField @bind-Value="_username" Label="User Name" Variant="Variant.Text" AutoFocus=true></MudTextField>
-                        <MudButton Size="Size.Small" OnClick=JoinGame Variant="Variant.Outlined">Join Game</MudButton>
+                        <MudButton Size="Size.Small" Disabled=_disableJoin OnClick=JoinGame Variant="Variant.Outlined">Join Game</MudButton>
                     </MudStack>
                 </MudItem>
             </MudGrid>
@@ -49,8 +52,19 @@ else
         @if(!_gameStarted){
             if (_isAdmin)
             {
-                <MudButton Size="Size.Small" OnClick=StartGame Variant="Variant.Outlined">Start Game</MudButton>
-                <MudButton Size="Size.Small" OnClick=DisconnectAsync Variant="Variant.Outlined">Leave Game</MudButton>
+            <MudGrid>
+                <MudItem xs="12" sm="6">
+                    <MudGrid>
+                        <MudItem xs="12">
+                            <MudStack>
+                                <MudNumericField @bind-Value="_numMafia" Label="Killers" Variant="Variant.Text" Min="1" Max="10" />
+                                <MudButton Size="Size.Small" Disabled=_disableStart OnClick=StartGame Variant="Variant.Outlined">Start Game</MudButton>
+                                <MudButton Size="Size.Small" OnClick=DisconnectAsync Variant="Variant.Outlined">Leave Game</MudButton>
+                            </MudStack>
+                        </MudItem>
+                    </MudGrid>
+                </MudItem>
+            </MudGrid>
             } 
             else
             {
@@ -77,6 +91,12 @@ else
 
     private bool _gameStarted = false;
 
+    private bool _disableJoin = false;
+
+    private bool _disableStart = false;
+
+    private int _numMafia = 1;
+
     // name of the user who will be chatting
     private string _username = string.Empty;
 
@@ -99,6 +119,9 @@ else
 
     public async Task JoinGame()
     {
+        _disableJoin = true;
+        await Task.Delay(1);
+
         // check username is valid
         if (string.IsNullOrWhiteSpace(_username))
         {
@@ -174,8 +197,10 @@ else
 
     private async Task StartGame()
     {
+        _disableStart = true;
+        await Task.Delay(1);
         await SendAsync($"<FONT COLOR='#ff0000'>{_username}</FONT> started the game...");
-        await _hubConnection.SendAsync("StartGame", LobbyName, 1);
+        await _hubConnection.SendAsync("StartGame", LobbyName, _numMafia);
     }
 
     private void GameStarted(string message)
@@ -206,15 +231,16 @@ else
             $"<FONT COLOR='#ff0000'>{userName}</FONT> has arrived...",
             $"Welcome <FONT COLOR='#ff0000'>{userName}</FONT>, you should leave :)",
             $"<FONT COLOR='#ff0000'>{userName}</FONT>! prepare to die!",
-            $"<FONT COLOR='#ff0000'>{userName}</FONT> likes cock, I mean cock, I mean cock!?",
             $" Hold the applause, <FONT COLOR='#ff0000'>{userName}</FONT> has joined",
             $" <FONT COLOR='#ff0000'>{userName}</FONT> bees?",
             $" <FONT COLOR='#ff0000'>{userName}</FONT> ... who let this guy in?",
             $" <FONT COLOR='#ff0000'>{userName}</FONT> has joined the game.",
-            $" Welcome <FONT COLOR='#ff0000'>{userName}</FONT>!",
-            $" Welcome aboard <FONT COLOR='#ff0000'>{userName}</FONT>!",
+            $" Wassssssssssssssssssssssssssssup <FONT COLOR='#ff0000'>{userName}</FONT>",
+            $" Hello, <FONT COLOR='#ff0000'>{userName}</FONT>",
+            $" I've missed you, <FONT COLOR='#ff0000'>{userName}</FONT>. You never come around anymore.",
+            $" Hello <FONT COLOR='#ff0000'>{userName}</FONT>, what brings you into this neck of the woods...",
+            $" You should've went home <FONT COLOR='#ff0000'>{userName}</FONT>, but now you must die!",
     };
-
         return phrases[_random.Next(phrases.Length)];
     }
 
