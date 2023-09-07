@@ -43,64 +43,64 @@ else
             </MudText>
         }
     </div>
-    <span>&nbsp</span>
-    <MudText>
-        @_users.Count() players in lobby.
-    </MudText>
-    <span>&nbsp</span>
-    <MudStack Row=true Spacing="2">
-        @if(!_gameStarted){
-            if (_isAdmin)
-            {
-            <MudGrid>
-                <MudItem xs="12" sm="6">
-                    <MudGrid>
-                        <MudItem xs="12">
-                                <MudList Clickable=true>
-                                    @if(_users.Count() > 1){
-                                        <MudListItem Text="Players">
-                                            <NestedList>
-                                                @foreach (var user in _users)
+
+        if (_isAdmin)
+        {
+        <MudText>
+            @_users.Count() players in lobby.
+        </MudText>
+        <span>&nbsp</span>
+        
+
+        <MudGrid>
+            <MudItem xs="12" sm="6">
+                <MudGrid>
+                    <MudItem xs="12">
+                        <MudStack>
+                            <MudList Clickable=true>
+                                @if (_users.Count() > 1)
+                                {
+                                    <MudListItem Text="Remove players">
+                                        <NestedList>
+                                            @foreach (var user in _users)
+                                            {
+                                                if (user.ConnectionId != _hubConnection.ConnectionId)
                                                 {
-                                                    if (user.ConnectionId != _hubConnection.ConnectionId)
-                                                    {
-                                                        <MudListItem>
-                                                            <MudStack Row=true>
-                                                                <MudText> @user.UserName </MudText>
-                                                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Outlined.DeleteOutline" Style="color:#FFFF" OnClick=@(() => KickUser(@user)) Variant="Variant.Outlined"></MudIconButton>
-                                                            </MudStack>
-                                                        </MudListItem>
-                                                    }
+                                                    <MudListItem>
+                                                        <MudStack Row=true>
+                                                            <MudText> @user.UserName </MudText>
+                                                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Outlined.DeleteOutline" Style="color:#FFFF" OnClick=@(() => KickUser(@user)) Variant="Variant.Outlined"></MudIconButton>
+                                                        </MudStack>
+                                                    </MudListItem>
                                                 }
-                                            </NestedList>
-                                        </MudListItem>
-                                    }
-                                    <MudListItem>
-                                        <MudNumericField @bind-Value="_numMafia" Label="Killers" Variant="Variant.Text" Min="1" />
+                                            }
+                                        </NestedList>
                                     </MudListItem>
-                                    <MudListItem>
-                                        <MudStack Row=true Justify="Justify.Center">
-                                            <MudButton Size="Size.Large" Disabled=_disableStart OnClick=StartGame Variant="Variant.Outlined">Start Game</MudButton>
-                                            <MudButton Size="Size.Large" OnClick=@(()=>DisconnectAsync()) Variant="Variant.Outlined">Leave Game</MudButton>
-                                        </MudStack>
-                                    </MudListItem>
-                                </MudList>
-                        </MudItem>
-                    </MudGrid>
-                </MudItem>
-            </MudGrid>
-            } 
-            else
-            {
-                <MudButton Size="Size.Small" OnClick=@(()=>DisconnectAsync()) Variant="Variant.Outlined">Leave Game</MudButton>
-            }
+                                }
+                            </MudList>
+                            <MudNumericField @bind-Value="_numMafia" Label="Killers" Variant="Variant.Text" Min="1"/>
+                                @if (_gameStarted)
+                                {
+                                    <MudButton Size="Size.Small" OnClick=@(()=>DisconnectAsync()) Variant="Variant.Outlined">Make New Game</MudButton>
+                                }
+                                else
+                                {
+                                    <MudButton Size="Size.Small" Disabled=_disableStart OnClick=StartGame Variant="Variant.Outlined">Start Game</MudButton>
+                                    <MudButton Size="Size.Small" OnClick=@(()=>DisconnectAsync()) Variant="Variant.Outlined">Leave Game</MudButton>
+                                } 
+                        </MudStack>
+                    </MudItem>
+                </MudGrid>
+            </MudItem>
+        </MudGrid>
         } 
         else
         {
-            <MudButton Size="Size.Small" OnClick=@(()=>DisconnectAsync()) Variant="Variant.Outlined">Make New Game</MudButton>
+            <MudText>
+                @_users.Count() players in lobby.
+            </MudText>
+            <MudButton Class="mt-4" Size="Size.Small" OnClick=@(()=>DisconnectAsync()) Variant="Variant.Outlined">Leave Game</MudButton>
         }
-    </MudStack>
- 
 }
 
 @code {
