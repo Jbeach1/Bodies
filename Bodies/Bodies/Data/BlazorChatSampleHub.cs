@@ -16,10 +16,10 @@ namespace BlazorChat
 
         public async Task Broadcast(string username, string message, string groupName)
         {
-            if(message.Contains("has left the lobby."))
+            if (message.Contains("has left the lobby.") || message.Contains("was kicked")) //fix this
             {
                 UserHandler.ConnectedUsers.Remove(Context.ConnectionId);
-                await Clients.Group(groupName).SendAsync("GetPlayerCount", UserHandler.GetCountByGroup(groupName));
+                await Clients.Group(groupName).SendAsync("UpdateUserList", UserHandler.GetUsersByGroup(groupName).Values.ToList());
             }
             await Clients.Group(groupName).SendAsync("Broadcast", username, message);
         }
@@ -34,9 +34,9 @@ namespace BlazorChat
             await base.OnDisconnectedAsync(e);
         }
 
-        public async Task AddGroup(string groupName)
+        public async Task AddGroup(string groupName, string userName)
         {
-            UserHandler.ConnectedUsers.Add(Context.ConnectionId, new User () { GroupName = groupName });
+            UserHandler.ConnectedUsers.Add(Context.ConnectionId, new User () { GroupName = groupName, UserName = userName, ConnectionId = Context.ConnectionId });
 
             if(UserHandler.GetCountByGroup(groupName) == 1)
             {
@@ -44,28 +44,30 @@ namespace BlazorChat
                 await Clients.Client(Context.ConnectionId).SendAsync("AssignAdmin");
             }
             await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
-            await Clients.Group(groupName).SendAsync("GetPlayerCount", UserHandler.GetCountByGroup(groupName));
+            await Clients.Group(groupName).SendAsync("UpdateUserList", UserHandler.GetUsersByGroup(groupName).Values.ToList());
         }
 
         public async Task StartGame(string groupName, int numberOfMafia)
         {
-           
-                for (int i = 0; i < numberOfMafia; i++)
+            for (int i = 0; i < numberOfMafia; i++)
+            {
+                var nonMafias = UserHandler.GetNonMafiaUser(groupName);
+                if (nonMafias != null && nonMafias.Count > 0) 
                 {
-                    var nonMafias = UserHandler.GetNonMafiaUser(groupName);
                     var temp = nonMafias.ElementAt(_random.Next(nonMafias.Count()));
                     temp.Value.IsMafia = true;
-                    if(UserHandler.ConnectedUsers.TryGetValue(temp.Key, out var user))
-                    {
-                        UserHandler.ConnectedUsers[temp.Key] = user;
-                    }
                 }
+            }
 
-                foreach(var x in UserHandler.GetUsersByGroup(groupName))
-                {
-                    await Clients.Client(x.Key).SendAsync("GameStarted", x.Value.GameStartedMessage);
-                }
-            
+            foreach(var x in UserHandler.GetUsersByGroup(groupName))
+            {
+                await Clients.Client(x.Key).SendAsync("GameStarted", x.Value.GameStartedMessage);
+            }
+        }
+
+        public async Task KickUser(string connectionId)
+        {
+            await Clients.Client(connectionId).SendAsync("DisconnectAsync", true);
         }
     }
 
@@ -120,10 +122,12 @@ namespace BlazorChat
     public class User
     {
         public string UserName { get; set; } = string.Empty;
-
         public string GroupName { get; set; } = string.Empty;
+
+        public string ConnectionId { get; set; } = string.Empty;
 
         public bool IsMafia = false;
         public string GameStartedMessage => IsMafia ? "<FONT COLOR='#ff0000'>YOU ARE THE KILLER!!</FONT>" : "YOU ARE NOT THE KILLER!";
+ 
     }
 }

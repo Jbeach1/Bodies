@@ -45,7 +45,7 @@ else
     </div>
     <span>&nbsp</span>
     <MudText>
-        @_numConnections players in lobby.
+        @_users.Count() players in lobby.
     </MudText>
     <span>&nbsp</span>
     <MudStack Row=true Spacing="2">
@@ -56,11 +56,35 @@ else
                 <MudItem xs="12" sm="6">
                     <MudGrid>
                         <MudItem xs="12">
-                            <MudStack>
-                                <MudNumericField @bind-Value="_numMafia" Label="Killers" Variant="Variant.Text" Min="1" Max="10" />
-                                <MudButton Size="Size.Small" Disabled=_disableStart OnClick=StartGame Variant="Variant.Outlined">Start Game</MudButton>
-                                <MudButton Size="Size.Small" OnClick=DisconnectAsync Variant="Variant.Outlined">Leave Game</MudButton>
-                            </MudStack>
+                                <MudList Clickable=true>
+                                    @if(_users.Count() > 1){
+                                        <MudListItem Text="Players">
+                                            <NestedList>
+                                                @foreach (var user in _users)
+                                                {
+                                                    if (user.ConnectionId != _hubConnection.ConnectionId)
+                                                    {
+                                                        <MudListItem>
+                                                            <MudStack Row=true>
+                                                                <MudText> @user.UserName </MudText>
+                                                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Outlined.DeleteOutline" Style="color:#FFFF" OnClick=@(() => KickUser(@user)) Variant="Variant.Outlined"></MudIconButton>
+                                                            </MudStack>
+                                                        </MudListItem>
+                                                    }
+                                                }
+                                            </NestedList>
+                                        </MudListItem>
+                                    }
+                                    <MudListItem>
+                                        <MudNumericField @bind-Value="_numMafia" Label="Killers" Variant="Variant.Text" Min="1" />
+                                    </MudListItem>
+                                    <MudListItem>
+                                        <MudStack Row=true Justify="Justify.Center">
+                                            <MudButton Size="Size.Large" Disabled=_disableStart OnClick=StartGame Variant="Variant.Outlined">Start Game</MudButton>
+                                            <MudButton Size="Size.Large" OnClick=@(()=>DisconnectAsync()) Variant="Variant.Outlined">Leave Game</MudButton>
+                                        </MudStack>
+                                    </MudListItem>
+                                </MudList>
                         </MudItem>
                     </MudGrid>
                 </MudItem>
@@ -68,12 +92,12 @@ else
             } 
             else
             {
-                <MudButton Size="Size.Small" OnClick=DisconnectAsync Variant="Variant.Outlined">Leave Game</MudButton>
+                <MudButton Size="Size.Small" OnClick=@(()=>DisconnectAsync()) Variant="Variant.Outlined">Leave Game</MudButton>
             }
         } 
         else
         {
-            <MudButton Size="Size.Small" OnClick=DisconnectAsync Variant="Variant.Outlined">Make New Game</MudButton>
+            <MudButton Size="Size.Small" OnClick=@(()=>DisconnectAsync()) Variant="Variant.Outlined">Make New Game</MudButton>
         }
     </MudStack>
  
@@ -117,6 +141,8 @@ else
 
     private int _numConnections = 0;
 
+    private List<User> _users = new List<User>();
+
     public async Task JoinGame()
     {
         _disableJoin = true;
@@ -126,6 +152,7 @@ else
         if (string.IsNullOrWhiteSpace(_username))
         {
             _message = "Please enter a name";
+            _disableJoin = false;
             return;
         };
 
@@ -148,12 +175,13 @@ else
                 .Build();
 
             _hubConnection.On<string, string>("Broadcast", BroadcastMessage);
-            _hubConnection.On<int>("GetPlayerCount", SetPlayerCount);
+            _hubConnection.On<List<User>>("UpdateUserList", SetUsers);
             _hubConnection.On<string>("GameStarted", GameStarted);
             _hubConnection.On("AssignAdmin", AssignAdmin);
+            _hubConnection.On<bool>("DisconnectAsync", DisconnectAsync);
 
             await _hubConnection.StartAsync();
-            await _hubConnection.SendAsync("AddGroup", LobbyName);
+            await _hubConnection.SendAsync("AddGroup", LobbyName, _username);
             await SendAsync(RandomMessage(_username));
         }
         catch (Exception e)
@@ -175,23 +203,38 @@ else
         StateHasChanged();
     }
 
-    private void SetPlayerCount(int count)
+    private void SetUsers(List<User> users)
     {
-        _numConnections = count;
+        _users = users;
     }
 
-    private async Task DisconnectAsync()
+    private async Task KickUser(User user)
     {
+        try
+        {
+            await _hubConnection.SendAsync("KickUser", user.ConnectionId);
+        } 
+        catch
+        {
+            _messages.Add(new Message($"Failed to kick {user.UserName}"));
+        }
+
+    }
+
+    private async Task DisconnectAsync(bool forcedKick = false)
+    {
+        var message = forcedKick ? $"<FONT COLOR='#ff0000'>{_username}</FONT> was kicked from the lobby." : $"<FONT COLOR='#ff0000'>{_username}</FONT> has left the lobby.";
         if (_inLobby)
         {
-            await _hubConnection.SendAsync("Broadcast", _username, $"<FONT COLOR='#ff0000'>{_username}</FONT> has left the lobby.", LobbyName);
 
+            GoHome();
+
+            await _hubConnection.SendAsync("Broadcast", _username, message, LobbyName);
             await _hubConnection.StopAsync();
             await _hubConnection.DisposeAsync();
 
             _hubConnection = null;
             _inLobby = false;
-            GoHome();
         }
     }
 
