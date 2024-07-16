@@ -38,11 +38,20 @@ else
     <div id="scrollbox">
         @foreach (var item in _messages)
         {
+            if(item.Body.ToString() == "Killer Confirmed" && !_isAdmin)
+            {
+                continue;
+            }
+
             <MudText Color="Color.Primary">
                 @((MarkupString)item.Body)
             </MudText>
         }
     </div>
+        if (_showConfirmationButton)
+        {
+            <MudButton Size="Size.Small" OnClick=@(()=>AcceptKiller()) Variant="Variant.Outlined"> ACCEPT ROLE AS KILLER </MudButton>
+        }
 
         if (_isAdmin)
         {
@@ -109,6 +118,10 @@ else
     public string LobbyName { get; set; } = string.Empty;
 
     private static Random _random = new Random();
+
+    private bool _showConfirmationButton = false;
+
+    private int _confirmedKillers = 0;
 
     // flag to indicate if the user has joined with a user name
     private bool _inLobby = false;
@@ -251,6 +264,11 @@ else
         _messages.Add(new Message(message));
         _gameStarted = true;
 
+        if (message.Contains("YOU ARE THE KILLER"))
+        {
+            _showConfirmationButton = true;
+        }
+
         StateHasChanged();
     }
 
@@ -262,6 +280,15 @@ else
 
             _newMessage = string.Empty;
         }
+    }
+
+    private async Task AcceptKiller()
+    {
+        _confirmedKillers++;
+        _showConfirmationButton = false;
+        await _hubConnection.SendAsync("Broadcast", _username, $"Killer Confirmed", LobbyName);
+
+        StateHasChanged();
     }
 
     public static string RandomMessage(string userName)
